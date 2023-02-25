@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS program (
    rating VARCHAR(20) NOT NULL,
    description TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS cast (
+CREATE TABLE IF NOT EXISTS `cast` (
    program_id VARCHAR(255) NOT NULL,
    actor_id INT NOT NULL,
    PRIMARY KEY (program_id, actor_id),

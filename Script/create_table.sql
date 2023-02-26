@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS program (
    title VARCHAR(255) NOT NULL,
    duration INT NOT NULL,
    rating VARCHAR(20) NOT NULL,
-   description TEXT NOT NULL
+   description TEXT NOT NULL,
+   type VARCHAR(20) NOT NULL
 );
 CREATE TABLE IF NOT EXISTS `cast` (
    program_id VARCHAR(255) NOT NULL,

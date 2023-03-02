@@ -1,3 +1,6 @@
+"""
+This script migrates the original MySQL database to MongoDB.
+"""
 import mysql.connector
 import pymongo
 import datetime
@@ -26,7 +29,7 @@ mysql_user = "root"
 mysql_password = "password123"
 
 mongodb_host = "mongodb://admin:asdqwe123@localhost:27017/"
-mongodb_dbname = "csc2008"
+mongodb_dbname = "csc2008mysql"
 
 print(f"{bcolors.HEADER}Initializing database connections...{bcolors.ENDC}")
 print("")

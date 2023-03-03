@@ -27,6 +27,10 @@ with open('./Data/netflix_titles.csv', 'r', encoding='utf8') as csvfile:
         item['title'] = row['title'].strip()
         item['description'] = row['description'].strip()
         item['duration'] = row['duration'].strip().split(' ')[0]
+        if item['duration'].isdigit():
+            item['duration'] = int(item['duration'])
+        else:
+            item['duration'] = None
         item['releaseYear'] = datetime.combine(
             datetime.strptime(
                 row['release_year'], '%Y'), datetime.min.time())

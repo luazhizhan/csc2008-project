@@ -62,7 +62,7 @@ categories:string[]
 
 ```json
 [
-  { $match: { releaseYear: ISODate("2018-01-01T00:00:00Z") } }, // only select "movies" from 2018
+  { $match: { releaseYear: ISODate("2021-01-01T00:00:00Z") } }, // only select "movies" from 2018
   { $project: { actors: 1 } }, // select only the actors field
   { $unwind: "$actors" }, // deconstruct the actors array
   { $group: { _id: "$actors", count: { $sum: 1 } } }, // group by actor and count
@@ -71,25 +71,21 @@ categories:string[]
 ]
 ```
 
-## Total Number of tv show by release Year and category
+## Total number of tv show by category and date added
 
 ```json
 [
-  // match TV shows with the given category
-  { "$match": { "categories": "TV Dramas" } },
-
-  // group by year and count the number of documents
+  {
+    "$match": { "type": "Movie" }
+  },
   {
     "$group": {
-      "_id": { "year": { "$year": "$releaseYear" } },
+      "_id": { "year": { "$year": "$dateAdded" }, "category": "$categories" },
       "count": { "$sum": 1 }
     }
   },
-
-  // sort the results by year in ascending order
-  { "$sort": { "_id.year": 1 } },
-
-  // project the year and count fields, and rename the _id.year field to year
-  { "$project": { "_id": 0, "year": "$_id.year", "count": 1 } }
+  {
+    "$sort": { "_id.year": 1 }
+  }
 ]
 ```

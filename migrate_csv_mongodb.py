@@ -22,7 +22,7 @@ with open('./Data/netflix_titles.csv', 'r', encoding='utf8') as csvfile:
         # Create a dictionary to store the data for this row
         item = {}
         # Map the values to the corresponding keys
-        item['program_id'] = row['show_id'].strip()
+        item['programId'] = row['show_id'].strip()
         item['type'] = row['type'].strip()
         item['title'] = row['title'].strip()
         item['description'] = row['description'].strip()

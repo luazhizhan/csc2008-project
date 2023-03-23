@@ -1,4 +1,4 @@
-# CSC2008
+# CSC2008 Group 15
 
 The Netflix Content Analysis and Insight Generation Tool is a software application designed to provide valuable insights into Netflix's content offerings. With an expanding number of subscribers and a massive library of content, it is crucial to understand the distribution of content across different countries, the popularity of actors and directors, and whether the platform focuses more on TV shows or movies.
 

@@ -207,3 +207,68 @@ GROUP BY a.name,
 ORDER BY b.year DESC,
     total_program DESC;
 ```
+
+### Add New Program Along With Its Corresponding Details
+```sql
+START TRANSACTION; 
+
+INSERT IGNORE INTO category (name) 
+VALUES ('Crime'); 
+INSERT INTO program (id, title, duration, rating, description, type) 
+VALUES ('123', 'The Godfather', 175, 'R', 'ABC', 'Movie'); 
+
+INSERT INTO `cast` (program_id, actor_id) 
+SELECT '123', id  
+FROM actor  
+WHERE name IN ('Marlon Brando', 'Al Pacino', 'James Caan'); 
+
+INSERT INTO directed (program_id, director_id) 
+SELECT '123', id  
+FROM director 
+WHERE name = 'Francis Ford Coppola'; 
+
+INSERT INTO broadcast (program_id, country_id, date, year) 
+VALUES ('123', (SELECT id FROM country  
+WHERE name = 'United States'), '2020-03-24', 2020); 
+INSERT INTO listed (program_id, category_id) 
+
+SELECT '123', id 
+FROM category  
+WHERE name IN ('Crime', 'Dramas'); 
+
+COMMIT; 
+```
+
+# Update Program Information
+```sql
+UPDATE program  
+SET title = "The Godfather Part II",  
+    description = "EFG",  
+    rating = "R"  
+WHERE id = "123";  
+DELETE FROM listed WHERE program_id = "123";  
+
+INSERT INTO listed (program_id, category_id)  
+SELECT "123", category.id  
+FROM category  
+WHERE category.name IN ("Crime", "Drama"); 
+DELETE FROM cast WHERE program_id = "123"; 
+
+INSERT INTO cast (program_id, actor_id) 
+SELECT "123", actor.id 
+FROM actor 
+WHERE actor.name IN ("Al Pacino", "Robert De Niro"); 
+```
+
+# Delete Program
+```sql
+START TRANSACTION;
+
+DELETE FROM broadcast WHERE program_id = '123';
+DELETE FROM cast WHERE program_id = '123';
+DELETE FROM directed WHERE program_id = '123';
+DELETE FROM listed WHERE program_id = '123';
+DELETE FROM program WHERE id = '123';
+
+COMMIT;
+```

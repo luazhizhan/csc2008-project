@@ -6,15 +6,34 @@ Queries visualized on Metabase.
 
 ### Total Number of Programs Streaming by Country
 
+Not optimised
+
 ```sql
-SELECT country.name AS country, COUNT(DISTINCT broadcast.program_id) AS total_programme
+SELECT country.name AS country, COUNT
+(
+DISTINCT broadcast.program_id) AS total_programme
 FROM broadcast
-JOIN country ON broadcast.country_id = country.id
+   JOIN country ON broadcast.country_id = country.id
 GROUP BY country.name
-ORDER BY total_programme DESC
+ORDER BY total_programme DESC;
+```
+
+Optimised
+
+```sql
+SELECT country.name AS country,
+(
+SELECT COUNT(DISTINCT broadcast.program_id)
+FROM broadcast
+WHERE broadcast.country_id = country.id
+) AS total_programme
+FROM country
+ORDER BY total_programme DESC;
 ```
 
 ### Actors in Programs Directed by a Specific Director
+
+Not optimised
 
 ```sql
 SELECT a.name AS actors
@@ -23,12 +42,24 @@ FROM actor AS a
     JOIN program AS p ON c.program_id = p.id
     JOIN directed AS d ON p.id = d.program_id
     JOIN director ON d.director_id = director.id
-WHERE d.name = "NAME"
+WHERE d.name = "Al Campbell"
+```
+
+Optimised
+
+```sql
+SELECT DISTINCT actor.name AS actors
+FROM director
+   JOIN directed ON director.id = directed.director_id
+  JOIN program ON directed.program_id = program.id
+  JOIN cast ON program.id = cast.program_id
+  JOIN actor ON cast.actor_id = actor.id
+WHERE director.name = "Al Campbell";
 ```
 
 ### Actors with the Most Appearances since Year 2000
 
-Optimised
+Not optimised
 
 ```sql
 WITH actor_appearances AS (
@@ -53,7 +84,7 @@ JOIN max_actor_appearances ON max_actor_appearances.year = broadcast.year AND ma
 ORDER BY broadcast.year, actor_appearances.appearances DESC;
 ```
 
-Not optimised
+Optimised
 
 ```sql
 SELECT year, actor.name, COUNT(*) as appearances
@@ -78,6 +109,8 @@ ORDER BY year, appearances DESC;
 
 ### Total Number of Programs by Categories
 
+Not optimised
+
 ```sql
 SELECT category.name AS catergory, COUNT(listed.program_id) AS total_programme
 FROM listed
@@ -86,7 +119,22 @@ GROUP BY category.name
 ORDER BY total_programme DESC;
 ```
 
+Optimised
+
+```sql
+SELECT category.name AS category,
+(
+  SELECT COUNT(*)
+  FROM listed
+  WHERE listed.category_id = category.id
+) AS total_programme
+FROM category
+ORDER BY total_programme DESC;
+```
+
 ### Program Titles Featuring Actor
+
+Not optimised
 
 ```sql
 SELECT DISTINCT(program.title), broadcast.date, program.rating
@@ -101,7 +149,24 @@ WHERE actor.name = "NAME"
 GROUP BY program.title, broadcast.date, program.rating
 ```
 
+Optimised
+
+```sql
+SELECT DISTINCT program.title, broadcast.date, program.rating
+FROM program
+  JOIN cast ON program.id = cast.program_id
+  JOIN actor ON cast.actor_id = actor.id
+  JOIN broadcast ON program.id = broadcast.program_id
+  JOIN listed ON program.id = listed.program_id
+  JOIN category ON listed.category_id = category.id
+  JOIN country ON broadcast.country_id = country.id
+WHERE actor.name = "NAME"
+GROUP BY program.title, broadcast.date, program.rating;
+```
+
 ### Top 10 Most Prolific Directors
+
+Not optimised
 
 ```sql
 SELECT director.name,
@@ -115,7 +180,29 @@ ORDER BY directed_amount DESC
 LIMIT 10;
 ```
 
+Optimised
+
+```sql
+SELECT director.name,
+(
+  SELECT COUNT(DISTINCT directed.program_id)
+    FROM directed
+    WHERE directed.director_id = director.id
+) AS directed_amount,
+(
+    SELECT GROUP_CONCAT(program.title)
+    FROM directed
+    JOIN program ON directed.program_id = program.id
+    WHERE directed.director_id = director.id
+) AS programme_list
+FROM director
+ORDER BY directed_amount DESC
+LIMIT 10;
+```
+
 ### Total Programs Broadcasted in the 2021
+
+Not optimised
 
 ```sql
 SELECT COUNT(*) AS total_programs
@@ -123,44 +210,21 @@ FROM broadcast
 WHERE year = (SELECT MAX(year) FROM broadcast) -- will return 2021
 ```
 
+Optimised
+
+```sql
+SELECT COUNT(*) AS total_programs
+FROM broadcast
+WHERE year =
+(
+SELECT MAX(year) 
+FROM broadcast
+)
+```
+
 ## Not In Metabase
 
 Queries not visualized on Metabase.
-
-### Top 5 Countries by Views of Most Watched Genre (WRONG)
-
-```sql
-SELECT
-    country.name AS country,
-    category.name AS genre,
-    COUNT(DISTINCT broadcast.program_id) AS total_views
-FROM
-    broadcast
-    JOIN country ON broadcast.country_id = country.id
-    JOIN program ON broadcast.program_id = program.id
-    JOIN listed ON program.id = listed.program_id
-    JOIN category ON listed.category_id = category.id
-WHERE
-    category.name = (
-        SELECT
-            category.name
-        FROM
-            listed
-            JOIN category ON listed.category_id = category.id
-            JOIN program ON listed.program_id = program.id
-            JOIN broadcast ON program.id = broadcast.program_id
-        GROUP BY
-            category.name
-        ORDER BY
-            COUNT(DISTINCT broadcast.program_id) DESC
-        LIMIT 1
-    )
-GROUP BY
-    country.name, category.name
-ORDER BY
-    COUNT(DISTINCT broadcast.program_id) DESC
-LIMIT 5;
-```
 
 ### Show the program available in the country in a given range year
 
@@ -177,9 +241,7 @@ ORDER BY b.year ASC,
     p.title ASC;
 ```
 
-
-### Given the director, list out the actor the director work with before 
-
+### Given the director, list out the actor the director work with before
 
 ```sql
 SELECT a.name AS actor
@@ -208,59 +270,66 @@ ORDER BY b.year DESC,
     total_program DESC;
 ```
 
-### Add New Program Along With Its Corresponding Details
+### Insert Program
+
 ```sql
-START TRANSACTION; 
+START TRANSACTION;
 
-INSERT IGNORE INTO category (name) 
-VALUES ('Crime'); 
-INSERT INTO program (id, title, duration, rating, description, type) 
-VALUES ('123', 'The Godfather', 175, 'R', 'ABC', 'Movie'); 
+INSERT IGNORE INTO category (name)
+VALUES ('Crime');
+INSERT INTO program (id, title, duration, rating, description, type)
+VALUES ('123', 'The Godfather', 175, 'R', 'ABC', 'Movie');
 
-INSERT INTO `cast` (program_id, actor_id) 
-SELECT '123', id  
-FROM actor  
-WHERE name IN ('Marlon Brando', 'Al Pacino', 'James Caan'); 
+INSERT INTO `cast` (program_id, actor_id)
+SELECT '123', id
+FROM actor
+WHERE name IN ('Marlon Brando', 'Al Pacino', 'James Caan');
 
-INSERT INTO directed (program_id, director_id) 
-SELECT '123', id  
-FROM director 
-WHERE name = 'Francis Ford Coppola'; 
+INSERT INTO directed (program_id, director_id)
+SELECT '123', id
+FROM director
+WHERE name = 'Francis Ford Coppola';
 
-INSERT INTO broadcast (program_id, country_id, date, year) 
-VALUES ('123', (SELECT id FROM country  
-WHERE name = 'United States'), '2020-03-24', 2020); 
-INSERT INTO listed (program_id, category_id) 
+INSERT INTO broadcast (program_id, country_id, date, year)
+VALUES ('123', (SELECT id FROM country
+WHERE name = 'United States'), '2020-03-24', 2020);
+INSERT INTO listed (program_id, category_id)
 
-SELECT '123', id 
-FROM category  
-WHERE name IN ('Crime', 'Dramas'); 
+SELECT '123', id
+FROM category
+WHERE name IN ('Crime', 'Dramas');
 
-COMMIT; 
+COMMIT;
 ```
 
-# Update Program Information
+# Update Program
+
 ```sql
-UPDATE program  
-SET title = "The Godfather Part II",  
-    description = "EFG",  
-    rating = "R"  
-WHERE id = "123";  
-DELETE FROM listed WHERE program_id = "123";  
+START TRANSACTION;
 
-INSERT INTO listed (program_id, category_id)  
-SELECT "123", category.id  
-FROM category  
-WHERE category.name IN ("Crime", "Drama"); 
-DELETE FROM cast WHERE program_id = "123"; 
+UPDATE program
+SET title = "The Godfather Part II",
+    description = "EFG",
+    rating = "R"
+WHERE id = "123";
+DELETE FROM listed WHERE program_id = "123";
 
-INSERT INTO cast (program_id, actor_id) 
-SELECT "123", actor.id 
-FROM actor 
-WHERE actor.name IN ("Al Pacino", "Robert De Niro"); 
+INSERT INTO listed (program_id, category_id)
+SELECT "123", category.id
+FROM category
+WHERE category.name IN ("Crime", "Drama");
+DELETE FROM cast WHERE program_id = "123";
+
+INSERT INTO cast (program_id, actor_id)
+SELECT "123", actor.id
+FROM actor
+WHERE actor.name IN ("Al Pacino", "Robert De Niro");
+
+COMMIT;
 ```
 
 # Delete Program
+
 ```sql
 START TRANSACTION;
 
